@@ -1,6 +1,6 @@
 # orderdesk
 
-Order intake API with a background worker that fulfils orders. FastAPI, SQLAlchemy, Postgres.
+Order intake API with a background worker that fulfills orders. FastAPI, SQLAlchemy, Postgres.
 
 - `POST /orders` creates an order in `pending`
 - `GET /orders/{id}`, `GET /orders?status=pending`

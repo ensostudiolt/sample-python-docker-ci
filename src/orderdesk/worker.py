@@ -1,4 +1,4 @@
-"""Background worker: picks up pending orders and fulfils them.
+"""Background worker: picks up pending orders and fulfills them.
 
 Run forever:      python -m orderdesk.worker
 Run one batch:    python -m orderdesk.worker --once
@@ -19,7 +19,7 @@ from orderdesk.settings import settings
 log = logging.getLogger("orderdesk.worker")
 
 
-def fulfil(order: Order) -> None:
+def fulfill(order: Order) -> None:
     """Stand-in for the real work: reserve stock, notify the warehouse, email the customer."""
     if order.quantity > 500:
         raise ValueError("quantity above the single-shipment limit")
@@ -38,7 +38,7 @@ def process_batch(session: Session, batch_size: int) -> int:
     orders = list(session.scalars(stmt))
     for order in orders:
         try:
-            fulfil(order)
+            fulfill(order)
             order.status = OrderStatus.processed
         except Exception as exc:
             log.warning("order %s failed: %s", order.id, exc)
