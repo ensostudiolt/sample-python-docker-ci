@@ -1,0 +1,13 @@
+[Unit]
+Description=orderdesk worker
+After=network.target postgresql.service
+
+[Service]
+User=deploy
+WorkingDirectory=/srv/orderdesk
+EnvironmentFile=/srv/orderdesk/.env
+ExecStart=/srv/orderdesk/.venv/bin/python -m orderdesk.worker
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
