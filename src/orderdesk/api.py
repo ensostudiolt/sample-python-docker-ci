@@ -43,7 +43,8 @@ def health() -> dict[str, str]:
     try:
         db.ping()
     except Exception as exc:  # pragma: no cover - exercised only when the DB is down
-        raise HTTPException(status_code=503, detail=f"database unavailable: {exc.__class__.__name__}") from exc
+        detail = f"database unavailable: {exc.__class__.__name__}"
+        raise HTTPException(status_code=503, detail=detail) from exc
     return {"status": "ok", "version": __version__}
 
 
