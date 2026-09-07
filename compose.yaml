@@ -1,0 +1,52 @@
+# Local development. `docker compose up` gives you the API on http://localhost:8000,
+# the worker, and a Postgres with a persistent volume. Source is mounted so the API
+# reloads on save.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orderdesk
+      POSTGRES_PASSWORD: orderdesk
+      POSTGRES_DB: orderdesk
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderdesk -d orderdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    command: uvicorn orderdesk.api:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql+psycopg://orderdesk:orderdesk@db:5432/orderdesk
+      APP_ENV: development
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python -m orderdesk.worker
+    environment:
+      DATABASE_URL: postgresql+psycopg://orderdesk:orderdesk@db:5432/orderdesk
+      APP_ENV: development
+      WORKER_POLL_SECONDS: "1"
+    volumes:
+      - ./src:/app/src:ro
+    healthcheck:
+      disable: true
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
