@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from orderdesk import db
 from orderdesk.models import Order, OrderStatus
-from orderdesk.worker import process_batch
+from orderdesk.worker import beat, process_batch
 
 
 def _seed(session, n, quantity=1):
@@ -37,3 +37,12 @@ def test_worker_marks_failures_without_stopping():
     assert rows[0].status == OrderStatus.failed
     assert "limit" in (rows[0].note or "")
     assert rows[1].status == OrderStatus.processed
+
+
+def test_heartbeat_touches_file(tmp_path):
+    hb = tmp_path / "heartbeat"
+    beat(str(hb))
+    assert hb.exists()
+    first = hb.stat().st_mtime
+    beat(str(hb))
+    assert hb.stat().st_mtime >= first
