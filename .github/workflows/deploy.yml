@@ -13,8 +13,7 @@ on:
         required: true
         default: latest
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: deploy-production
@@ -29,11 +28,15 @@ jobs:
     steps:
       - name: Resolve image tag
         id: tag
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.image_tag }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=sha-${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "tag=sha-$HEAD_SHA" >> "$GITHUB_OUTPUT"
           fi
       - name: SSH setup
         run: |
@@ -42,7 +45,8 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
       - name: Deploy ${{ steps.tag.outputs.tag }}
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd /srv/orderdesk && ./deploy.sh '${{ steps.tag.outputs.tag }}'"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" "cd /srv/orderdesk && ./deploy.sh '$TAG'"

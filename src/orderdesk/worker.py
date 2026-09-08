@@ -8,6 +8,7 @@ import argparse
 import logging
 import sys
 import time
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -49,9 +50,15 @@ def process_batch(session: Session, batch_size: int) -> int:
     return len(orders)
 
 
+def beat(path: str) -> None:
+    """Touch the heartbeat file. The container health check fails if it goes stale."""
+    Path(path).touch()
+
+
 def run_forever(poll_seconds: float, batch_size: int) -> None:
     log.info("worker started, polling every %.1fs", poll_seconds)
     while True:
+        beat(settings.worker_heartbeat_path)
         with db.SessionLocal() as session:
             n = process_batch(session, batch_size)
         if n:
